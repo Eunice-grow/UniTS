@@ -568,8 +568,10 @@ class SWATSegLoader(Dataset):
         self.win_size = win_size
         self.scaler = StandardScaler()
 
-        train_data = pd.read_csv(os.path.join(root_path, 'swat_train2.csv'))
-        test_data = pd.read_csv(os.path.join(root_path, 'swat2.csv'))
+        # train_data = pd.read_csv(os.path.join(root_path, 'swat_train2.csv'))
+        # test_data = pd.read_csv(os.path.join(root_path, 'swat2.csv'))
+        train_data = pd.read_csv(os.path.join(root_path, 'SWaT_train.csv'))
+        test_data = pd.read_csv(os.path.join(root_path, 'SWaT_test.csv'))
         labels = test_data.values[:, -1:]
         train_data = train_data.values[:, :-1]
         test_data = test_data.values[:, :-1]
@@ -582,8 +584,8 @@ class SWATSegLoader(Dataset):
         data_len = len(self.train)
         self.val = self.train[(int)(data_len * 0.8):]
         self.test_labels = labels
-        # print("test:", self.test.shape)
-        # print("train:", self.train.shape)
+        print("test:", self.test.shape)
+        print("train:", self.train.shape)
 
     def __len__(self):
         """
