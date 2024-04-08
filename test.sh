@@ -1,5 +1,6 @@
 model_name=UniTS
-wandb_mode=online
+# wandb_mode=online
+wandb_mode=disabled
 project_name=anomaly_detection
 exp_name=test_ad
 

@@ -85,6 +85,7 @@ def data_provider(args, config, flag, ddp=False):  # args,
             data_set = random_subset(
                 data_set, args.subsample_pct, args.fix_seed)
         print("ddp mode is set to false for anomaly_detection", ddp, len(data_set))
+        # 加载数据
         data_loader = DataLoader(
             data_set,
             batch_size=batch_size,
