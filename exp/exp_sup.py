@@ -398,6 +398,7 @@ class Exp_All_Task(object):
                     loss = self.train_imputation(
                         self.model, sample, criterion_list[task_id], self.task_data_config_list[task_id][1], task_id)
                     loss_scale = 1.0
+                #########异常检测训练
                 elif task_name == 'anomaly_detection':
                     loss = self.train_anomaly_detection(
                         self.model, sample, criterion_list[task_id], self.task_data_config_list[task_id][1], task_id)
@@ -519,8 +520,10 @@ class Exp_All_Task(object):
         batch_x = batch_x.float().to(self.device_id)
 
         with torch.cuda.amp.autocast():
+            # 向前传播计算
             outputs = model(batch_x, None, None,
                             None, task_id=task_id, task_name=task_name)
+            # 多变量预测单变量
             f_dim = -1 if features == 'MS' else 0
             outputs = outputs[:, :, f_dim:]
             loss = criterion(outputs, batch_x)

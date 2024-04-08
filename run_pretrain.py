@@ -22,6 +22,7 @@ if __name__ == '__main__':
     # data loader
     parser.add_argument('--data', type=str, required=False,
                         default='All', help='dataset type')
+    #######M多变量预测多变量,S单变量预测单变量,MS多变量预测单变量
     parser.add_argument('--features', type=str, default='M',
                         help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
     parser.add_argument('--target', type=str, default='OT',

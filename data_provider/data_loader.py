@@ -249,20 +249,20 @@ class Dataset_Custom(Dataset):
         num_train = int(len(df_raw) * 0.7)
         num_test = int(len(df_raw) * 0.2)
         num_vali = len(df_raw) - num_train - num_test
-        
-        border1s = [0, num_train - self.seq_len,
-                    len(df_raw) - num_test - self.seq_len]
-        border2s = [num_train, num_train + num_vali, len(df_raw)]
-        border1 = border1s[self.set_type]
-        border2 = border2s[self.set_type]
 
-        if self.features == 'M' or self.features == 'MS':
+        border1s = [0, num_train - self.seq_len,
+                    len(df_raw) - num_test - self.seq_len] #训练集,测试集,验证集的起始位置?
+        border2s = [num_train, num_train + num_vali, len(df_raw)] # 结束位置
+        border1 = border1s[self.set_type]
+        border2 = border2s[self.set_type] # 根据train\test\evl选定某个数据集的边界
+
+        if self.features == 'M' or self.features == 'MS': # S代表的是秒还是单变量???可能是单变量
             cols_data = df_raw.columns[1:]
             df_data = df_raw[cols_data]
         elif self.features == 'S':
             df_data = df_raw[[self.target]]
 
-        if self.scale:
+        if self.scale: # 是否标准化
             train_data = df_data[border1s[0]:border2s[0]]
             self.scaler.fit(train_data.values)
             data = self.scaler.transform(df_data.values)
@@ -271,6 +271,7 @@ class Dataset_Custom(Dataset):
 
         df_stamp = df_raw[['date']][border1:border2]
         df_stamp['date'] = pd.to_datetime(df_stamp.date)
+        # 时间编码方式,分别提取月日周时特征//保留原始状态
         if self.timeenc == 0:
             df_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
             df_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
@@ -289,9 +290,9 @@ class Dataset_Custom(Dataset):
 
     def __getitem__(self, index):
         s_begin = index
-        s_end = s_begin + self.seq_len
-        r_begin = s_end - self.label_len
-        r_end = r_begin + self.label_len + self.pred_len
+        s_end = s_begin + self.seq_len  # 获取指定index位置的时间序列
+        r_begin = s_end - self.label_len  # 序列长度和标签长度不一致?
+        r_end = r_begin + self.label_len + self.pred_len # 标签长度+预测长度?
 
         seq_x = self.data_x[s_begin:s_end]
         seq_y = self.data_y[r_begin:r_end]
@@ -303,7 +304,7 @@ class Dataset_Custom(Dataset):
     def __len__(self):
         return len(self.data_x) - self.seq_len - self.pred_len + 1
 
-    def inverse_transform(self, data):
+    def inverse_transform(self, data): # 将数据从归一化空间转换回原始空间
         return self.scaler.inverse_transform(data)
 
 # Removed due to the LICENSE file constraints of m4.py
