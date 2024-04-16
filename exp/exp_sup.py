@@ -389,6 +389,9 @@ class Exp_All_Task(object):
 
             task_name = self.task_data_config_list[task_id][1]['task_name']
             small_batch_size = self.task_data_config_list[task_id][1]['max_batch']
+            if small_batch_size == 0:
+                print("small_batch_size 00000000000")
+                continue
             if small_batch_size != self.args.batch_size:
                 sample_list = self.split_batch(
                     sample_init, small_batch_size, task_name)
@@ -910,6 +913,7 @@ class Exp_All_Task(object):
 
     def split_batch(self, batch, small_batch_size, task_name):
         def split_tensor(tensor, size):
+            print("size:",size)
             return [tensor[i:min(i + size, tensor.size(0))] for i in range(0, tensor.size(0), size)]
         if task_name == 'classification':
             batch_x, label, padding_mask = batch

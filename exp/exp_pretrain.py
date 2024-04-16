@@ -287,6 +287,7 @@ class Exp_All_Task(object):
         """
 
         def split_tensor(tensor, size):
+            print("size:",size)
             return [tensor[i:min(i + size, tensor.size(0))] for i in range(0, tensor.size(0), size)]
 
         if "long_term_forecast" in task_name:
