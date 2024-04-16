@@ -4,7 +4,7 @@ from exp.exp_pretrain import Exp_All_Task as Exp_All_Task_SSL
 import random
 import numpy as np
 import wandb
-from utils.ddp import is_main_process, init_distributed_mode
+# from utils.ddp import is_main_process, init_distributed_mode
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='UniTS Pretrain')
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     parser.add_argument("--prompt_num", type=int, default=10)
 
     args = parser.parse_args()
-    init_distributed_mode(args)
+    # init_distributed_mode(args)
 
     print('Args in experiment:')
     print(args)
@@ -113,15 +113,15 @@ if __name__ == '__main__':
         args.e_layers,
         args.des)
 
-    if is_main_process():
-        wandb.init(
-            name=exp_name,
-            # set the wandb project where this run will be logged
-            project="pretrain",
-            # track hyperparameters and run metadata
-            config=args,
-            mode=args.debug,
-        )
+    # if is_main_process():
+    #     wandb.init(
+    #         name=exp_name,
+    #         # set the wandb project where this run will be logged
+    #         project="pretrain",
+    #         # track hyperparameters and run metadata
+    #         config=args,
+    #         mode=args.debug,
+    #     )
     Exp = Exp_All_Task_SSL
 
     if args.is_training:

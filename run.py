@@ -4,7 +4,7 @@ from exp.exp_sup import Exp_All_Task as Exp_All_Task_SUP
 import random
 import numpy as np
 import wandb
-from utils.ddp import is_main_process, init_distributed_mode
+# from utils.ddp import is_main_process, init_distributed_mode
 
 
 if __name__ == '__main__':
@@ -111,7 +111,7 @@ if __name__ == '__main__':
                         type=str, default=None, help='unify')
 
     args = parser.parse_args()
-    init_distributed_mode(args)
+    # init_distributed_mode(args)
     if args.fix_seed is not None:
         random.seed(args.fix_seed)
         torch.manual_seed(args.fix_seed)
@@ -133,15 +133,15 @@ if __name__ == '__main__':
         exp_name = 'Ptune'+str(args.prompt_tune_epoch)+'_'+exp_name
         print(exp_name)
 
-    if is_main_process():
-        wandb.init(
-            name=exp_name,
-            # set the wandb project where this run will be logged
-            project=args.project_name,
-            # track hyperparameters and run metadata
-            config=args,
-            mode=args.debug,
-        )
+    # if is_main_process():
+    #     wandb.init(
+    #         name=exp_name,
+    #         # set the wandb project where this run will be logged
+    #         project=args.project_name,
+    #         # track hyperparameters and run metadata
+    #         config=args,
+    #         mode=args.debug,
+    #     )
 
     Exp = Exp_All_Task_SUP
 

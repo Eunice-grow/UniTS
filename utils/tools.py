@@ -1,7 +1,8 @@
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-from torch import inf
+# from torch import inf
+from torch import isinf
 
 plt.switch_backend('agg')
 
@@ -150,7 +151,8 @@ def get_grad_norm_(parameters, norm_type: float = 2.0) -> torch.Tensor:
     if len(parameters) == 0:
         return torch.tensor(0.)
     device = parameters[0].grad.device
-    if norm_type == inf:
+    # if norm_type == inf:
+    if isinf(norm_type):
         total_norm = max(p.grad.detach().abs().max().to(device)
                          for p in parameters)
     else:

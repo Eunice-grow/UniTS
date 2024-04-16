@@ -19,8 +19,9 @@ task_dataset:
     task_name: anomaly_detection
     dataset_name: SWAT
     dataset: SWAT
+    # data: custom
     data: SWAT
-    root_path: ../dataset/SWaT
+    root_path: ./dataset/SWaT
     seq_len: 96
     label_len: 0
     pred_len: 0

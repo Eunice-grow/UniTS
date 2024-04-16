@@ -3,7 +3,7 @@ from utils.tools import cosine_scheduler
 from utils.tools import NativeScalerWithGradNormCount as NativeScaler
 from utils.losses import UnifiedMaskRecLoss
 from utils.dataloader import BalancedDataLoaderIterator
-from utils.ddp import is_main_process, get_world_size
+# from utils.ddp import is_main_process, get_world_size
 
 import torch
 import torch.nn as nn
@@ -84,9 +84,9 @@ class Exp_All_Task(object):
         module = importlib.import_module("models."+self.args.model)
         model = module.Model(
             self.args, self.task_data_config_list, pretrain=True).to(self.device_id)
-        if ddp:
-            model = nn.parallel.DistributedDataParallel(
-                model, device_ids=[self.device_id], find_unused_parameters=True)
+        # if ddp:
+        #     model = nn.parallel.DistributedDataParallel(
+        #         model, device_ids=[self.device_id], find_unused_parameters=True)
         return model.to(self.device_id)
 
     def _get_data(self, flag):
@@ -118,12 +118,14 @@ class Exp_All_Task(object):
 
     def train(self, setting):
         path = os.path.join(self.args.checkpoints, setting)
-        if not os.path.exists(path) and is_main_process():
+        # if not os.path.exists(path) and is_main_process():
+        #     os.makedirs(path)
+        if not os.path.exists(path):
             os.makedirs(path)
         self.path = path
 
         torch.cuda.synchronize()
-        dist.barrier()
+        # dist.barrier()
 
         # Data loader
         _, train_loader_list = self._get_data(flag='train')
@@ -136,7 +138,7 @@ class Exp_All_Task(object):
             torch.cuda.empty_cache()
 
         torch.cuda.synchronize()
-        dist.barrier()
+        # dist.barrier()
 
         # Model
         self.model = self._build_model()
@@ -165,18 +167,26 @@ class Exp_All_Task(object):
 
             print("Epoch: {0}, Steps: {1} | Avg Train Loss: {2:.7f}".format(
                 epoch + 1, train_steps, train_loss), folder=self.path)
-            if is_main_process():
-                wandb.log({'train_loss_avg': train_loss})
+            # if is_main_process():
+            #     wandb.log({'train_loss_avg': train_loss})
 
-            if is_main_process():
-                save_dict = {
+            # if is_main_process():
+            #     save_dict = {
+            #         'student': self.model.state_dict(),
+            #         'optimizer': model_optim.state_dict(),
+            #         'epoch': epoch + 1,
+            #         'args': self.args,
+            #     }
+
+            #     torch.save(save_dict, path + '/' + 'pretrain_checkpoint.pth')
+            save_dict = {
                     'student': self.model.state_dict(),
                     'optimizer': model_optim.state_dict(),
                     'epoch': epoch + 1,
                     'args': self.args,
                 }
 
-                torch.save(save_dict, path + '/' + 'pretrain_checkpoint.pth')
+            torch.save(save_dict, path + '/' + 'pretrain_checkpoint.pth')
 
         return self.model
 
@@ -238,22 +248,25 @@ class Exp_All_Task(object):
             if torch.cuda.memory_reserved(current_device) > 30*1e9:
                 torch.cuda.empty_cache()
 
-            if is_main_process():
-                wandb_loss_dict = {
-                    'norm': norm_value if norm_value is not None else 0,
-                    'train_cls_loss_'+self.task_data_config_list[task_id][0]: loss_dict['cls_loss'].item(),
-                    'train_mask_loss_'+self.task_data_config_list[task_id][0]: loss_dict['mask_loss'].item(),
-                    'train_sum_loss_'+self.task_data_config_list[task_id][0]: loss_dict['loss'].item(),
-                    "loss_avg": loss_sum_display/(i+1)
-                }
-                wandb.log(wandb_loss_dict)
+            # if is_main_process():
+            #     wandb_loss_dict = {
+            #         'norm': norm_value if norm_value is not None else 0,
+            #         'train_cls_loss_'+self.task_data_config_list[task_id][0]: loss_dict['cls_loss'].item(),
+            #         'train_mask_loss_'+self.task_data_config_list[task_id][0]: loss_dict['mask_loss'].item(),
+            #         'train_sum_loss_'+self.task_data_config_list[task_id][0]: loss_dict['loss'].item(),
+            #         "loss_avg": loss_sum_display/(i+1)
+            #     }
+            #     wandb.log(wandb_loss_dict)
 
-            if (i + 1) % 50 == 0 and is_main_process():
+            # if (i + 1) % 50 == 0 and is_main_process():
+            if (i + 1) % 50 == 0:
                 print("\titers: {0}, epoch: {1} | lr: {2:.5} | loss_avg: {3} | current_loss: {4} |current data: {5}".format(
                     i + 1, epoch + 1, lr_schedule[it], loss_sum_display/(i+1), loss.item() * acc_it, task_name), folder=self.path)
 
-        if is_main_process():
-            print("Epoch: {} cost time: {}".format(
+        # if is_main_process():
+        #     print("Epoch: {} cost time: {}".format(
+        #         epoch + 1, time.time() - epoch_time), folder=self.path)
+        print("Epoch: {} cost time: {}".format(
                 epoch + 1, time.time() - epoch_time), folder=self.path)
         train_loss = np.average(train_loss_set)
 

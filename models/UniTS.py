@@ -204,6 +204,7 @@ class LearnablePositionalEmbedding(nn.Module):
         del pe
 
     def forward(self, x, offset=0):
+        # 根据输入张量 x 的长度和偏移量 offset 从位置编码张量 self.pe 中提取相应位置的位置编码
         return self.pe[:, :, offset:offset+x.size(2)]
 
 
@@ -383,6 +384,7 @@ class VarAttBlock(nn.Module):
         self.proj = nn.Linear(dim, dim)
 
     def forward(self, x):
+        # 归一化、注意力机制、门控模块、
         x = x + self.drop_path1(self.ls1(self.attn_var(self.norm1(x))))
         return x
 
@@ -481,6 +483,7 @@ class PatchEmbedding(nn.Module):
         self.value_embedding = nn.Linear(patch_len, d_model, bias=False)
         self.dropout = nn.Dropout(dropout)
 
+    # 通过线性变换将x映射到一个d_model维度的表示空间中,d_model是训练的参数定的
     def forward(self, x):
         n_vars = x.shape[1]
         x = x.unfold(dimension=-1, size=self.patch_len, step=self.stride)
@@ -669,19 +672,23 @@ class Model(nn.Module):
             stdev = torch.sqrt(
                 torch.var(x, dim=1, keepdim=True, unbiased=False) + 1e-5)
         x /= stdev
+        # 以上对输入数据进行标准化处理
         x = x.permute(0, 2, 1)
+        # 对输入数据进行填充，以确保其长度可以被patch大小整除
         remainder = x.shape[2] % self.patch_len
         if remainder != 0:
             padding = self.patch_len - remainder
             x = F.pad(x, (0, padding))
         else:
             padding = 0
+        # ###
         x, n_vars = self.patch_embeddings(x)
         return x, means, stdev, n_vars, padding
 
     def prepare_prompt(self, x, n_vars, prefix_prompt, task_prompt, task_prompt_num, task_name=None, mask=None):
         x = torch.reshape(
             x, (-1, n_vars, x.shape[-2], x.shape[-1]))
+        # 四维张量,变量放在第2维
         # append prompt tokens
         this_prompt = prefix_prompt.repeat(x.shape[0], 1, 1, 1)
 
@@ -720,6 +727,7 @@ class Model(nn.Module):
             x = x + self.position_embedding(x)
             x = torch.cat((this_prompt, x), dim=2)
         elif task_name == 'anomaly_detection':
+            # 输入数据和位置嵌入相加??再拼接提示信息??
             x = x + self.position_embedding(x)
             x = torch.cat((this_prompt, x), dim=2)
 
@@ -811,12 +819,14 @@ class Model(nn.Module):
         return x
 
     def anomaly_detection(self, x, x_mark, task_id):
+        # 异常检测向前传播
         dataset_name = self.configs_list[task_id][1]['dataset']
         prefix_prompt = self.prompt_tokens[dataset_name]
 
         seq_len = x.shape[1]
+        # token化
         x, means, stdev, n_vars, padding = self.tokenize(x)
-
+        # 提示信息,这一步包含了位置信息,和prefix_prompt?
         x = self.prepare_prompt(x, n_vars, prefix_prompt,
                                 None, None, task_name='anomaly_detection')
         seq_token_len = x.shape[-2]-prefix_prompt.shape[2]
@@ -975,7 +985,7 @@ class Model(nn.Module):
             return dec_out  # [B, L, D]
         if task_name == 'anomaly_detection':
             dec_out = self.anomaly_detection(x_enc, x_mark_enc, task_id)
-            return dec_out  # [B, L, D]
+            return dec_out  # [B, L, D]  # batchsize? sequenceLen? demension?
         if task_name == 'classification':
             dec_out = self.classification(x_enc, x_mark_enc, task_id)
             return dec_out  # [B, N]

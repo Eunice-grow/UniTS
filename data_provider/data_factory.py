@@ -76,11 +76,13 @@ def data_provider(args, config, flag, ddp=False):  # args,
 
     if 'anomaly_detection' in config['task_name']:
         drop_last = False
+        print("Data: ",Data)
         data_set = Data(
             root_path=config['root_path'],
             win_size=config['seq_len'],
             flag=flag,
         )
+        print("data_set: ",data_set)
         if args.subsample_pct is not None and flag == "train":
             data_set = random_subset(
                 data_set, args.subsample_pct, args.fix_seed)
@@ -91,7 +93,8 @@ def data_provider(args, config, flag, ddp=False):  # args,
             batch_size=batch_size,
             shuffle=False if ddp else shuffle_flag,
             num_workers=args.num_workers,
-            sampler=DistributedSampler(data_set) if ddp else None,
+            # sampler=DistributedSampler(data_set) if ddp else None,
+            sampler=None,
             drop_last=drop_last)
         return data_set, data_loader
     elif 'classification' in config['task_name']:
