@@ -586,12 +586,15 @@ class Model(nn.Module):
             dataset_name = configs_list[i][1]['dataset']
             task_data_name = configs_list[i][0]
             if dataset_name not in self.prompt_tokens:
-                self.prompt_tokens[dataset_name] = torch.zeros(
-                    1, configs_list[i][1]['enc_in'], args.prompt_num, args.d_model)
+                print(type(self.prompt_tokens))
+                self.prompt_tokens[dataset_name] = nn.Parameter(torch.zeros(
+                    1, configs_list[i][1]['enc_in'], args.prompt_num, args.d_model))
+                
                 torch.nn.init.normal_(
                     self.prompt_tokens[dataset_name], std=.02)
-                self.mask_tokens[dataset_name] = torch.zeros(
-                    1, configs_list[i][1]['enc_in'], 1, args.d_model)
+                
+                self.mask_tokens[dataset_name] = nn.Parameter(torch.zeros(
+                    1, configs_list[i][1]['enc_in'], 1, args.d_model))
 
             if configs_list[i][1]['task_name'] == 'classification':
                 self.category_tokens[task_data_name] = torch.zeros(

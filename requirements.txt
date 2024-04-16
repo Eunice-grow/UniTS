@@ -11,4 +11,5 @@ sympy==1.11.1
 tqdm==4.64.1
 gluonts==0.14.4
 wandb==0.16.6
+timm==0.9.16
 pyyaml
