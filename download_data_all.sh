@@ -99,6 +99,8 @@ if [ ! -f dataset/AsphaltRegularity.zip ]; then
     unzip dataset/AsphaltRegularity.zip -d dataset/AsphaltRegularity
 fi
 
+# --2024-04-16 15:25:29--  https://www.timeseriesclassification.com/aeon-toolkit/AsphaltRegularity.zip
+# 失败
 # AsphaltRegularityCoordinates data
 if [ ! -f dataset/AsphaltRegularityCoordinates.zip ]; then
     wget "https://www.timeseriesclassification.com/aeon-toolkit/AsphaltRegularityCoordinates.zip" -O dataset/AsphaltRegularityCoordinates.zip

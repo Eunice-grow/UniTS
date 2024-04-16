@@ -6,6 +6,8 @@ import numpy as np
 import wandb
 # from utils.ddp import is_main_process, init_distributed_mode
 
+print(torch.__version__)
+print(torch.cuda.is_available())
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='UniTS supervised training')
