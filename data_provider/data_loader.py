@@ -578,17 +578,10 @@ class SWATSegLoader(Dataset):
         train_data = pd.read_csv(os.path.join(root_path, 'SWaT_train.csv'), index_col=0)
         test_data = pd.read_csv(os.path.join(root_path, 'SWaT_test.csv'), index_col=0)
         
-        # print(train_data[:5])
-        # print(test_data[:5])
-
         labels = test_data.values[:, -1:]
         train_data = train_data.values[:, :-1]
         test_data = test_data.values[:, :-1]
         
-        # print(labels[:5])
-        # print(train_data[:5])
-        # print(test_data[:5])
-
         self.scaler.fit(train_data)
         train_data = self.scaler.transform(train_data)
         test_data = self.scaler.transform(test_data)

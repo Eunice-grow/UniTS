@@ -174,6 +174,10 @@ class Exp_All_Task(object):
         module = importlib.import_module("models."+self.args.model)
         model = module.Model(
             self.args, self.task_data_config_list).to(self.device_id)
+        
+        # if ddp:
+        #     model = nn.parallel.DistributedDataParallel(model, device_ids=[self.device_id],
+        #                                                 find_unused_parameters=True, gradient_as_bucket_view=True, static_graph=False)
         return model
 
     def _get_data(self, flag, test_anomaly_detection=False):
@@ -195,7 +199,6 @@ class Exp_All_Task(object):
                     self.args, task_config, flag='train', ddp=False)
                 data_set, data_loader = data_provider(
                     self.args, task_config, flag, ddp=False)  # ddp false to avoid shuffle
-                
                 data_set_list.append([train_data_set, data_set])
                 data_loader_list.append([train_data_loader, data_loader])
                 print(task_data_name, len(data_set))
@@ -208,7 +211,6 @@ class Exp_All_Task(object):
         return data_set_list, data_loader_list
 
     def _select_optimizer(self):
-
         # eff_batch_size = self.args.batch_size * self.args.acc_it * get_world_size()
         eff_batch_size = self.args.batch_size * self.args.acc_it * 1
         real_learning_rate = self.args.learning_rate * eff_batch_size / 32
@@ -218,7 +220,6 @@ class Exp_All_Task(object):
 
         print("accumulate grad iterations: %d" % self.args.acc_it)
         print("effective batch size: %d" % eff_batch_size)
-        
         if self.args.layer_decay is not None:
             print("layer decay: %.2f" % self.args.layer_decay)
             model_without_ddp = self.model.module
@@ -350,13 +351,25 @@ class Exp_All_Task(object):
                 setting, load_pretrain=False, test_data_list=test_data_list, test_loader_list=test_loader_list)
 
             # save ckpt
+            # if is_main_process():
+            #     if self.args.prompt_tune_epoch >= 1:
+            #         torch.save(self.model.state_dict(),
+            #                    os.path.join(path, 'ptune_checkpoint.pth'))
+            #     else:
+            #         torch.save(self.model.state_dict(),
+            #                    os.path.join(path, 'checkpoint.pth'))
             if self.args.prompt_tune_epoch >= 1:
                 torch.save(self.model.state_dict(),
                             os.path.join(path, 'ptune_checkpoint.pth'))
-            else: # ?
+            else: # 样例?
                 torch.save(self.model.state_dict(),
                             os.path.join(path, 'checkpoint.pth'))
         
+        # if is_main_process():
+        #     wandb.log({'Final_LF-mse': avg_forecast_mse,
+        #                'Final_LF-mae': avg_forecast_mae, 'Final_CLS-acc': avg_cls_acc})
+        #     print("Final score: LF-mse: {}, LF-mae: {}, CLS-acc {}".format(avg_forecast_mse,
+        #                                                                    avg_forecast_mae, avg_cls_acc), folder=self.path)
         print("Final score: LF-mse: {}, LF-mae: {}, CLS-acc {}".format(avg_forecast_mse,
                                                                            avg_forecast_mae, avg_cls_acc), folder=self.path)
         return self.model
@@ -376,6 +389,7 @@ class Exp_All_Task(object):
 
             task_name = self.task_data_config_list[task_id][1]['task_name']
             small_batch_size = self.task_data_config_list[task_id][1]['max_batch']
+            # ????为啥会是0啊
             if small_batch_size == 0:
                 continue
             if small_batch_size != self.args.batch_size:
@@ -400,7 +414,7 @@ class Exp_All_Task(object):
                     loss = self.train_imputation(
                         self.model, sample, criterion_list[task_id], self.task_data_config_list[task_id][1], task_id)
                     loss_scale = 1.0
-                #########异常检测
+                #########异常检测训练
                 elif task_name == 'anomaly_detection':
                     loss = self.train_anomaly_detection(
                         self.model, sample, criterion_list[task_id], self.task_data_config_list[task_id][1], task_id)
@@ -429,9 +443,17 @@ class Exp_All_Task(object):
             if torch.cuda.memory_reserved(current_device) > 30*1e9:
                 torch.cuda.empty_cache()
 
+            # if is_main_process():
+            #     wandb.log(
+            #         {'train_loss_'+self.task_data_config_list[task_id][0]: loss_display, 'norm_value': norm_value, "loss_sum": loss_sum_display/(i+1)})
+
             if (i + 1) % 100 == 0:
                 if norm_value == None:
                     norm_value = -1
+                # if is_main_process():
+                #     print("\titers: {0}, epoch: {1} | norm: {2:.2f} | loss: {3:.7f} | current_loss: {4} |current task: {5}".format(
+                #         i + 1, epoch + 1, norm_value, loss_sum_display/(i+1), loss_display, task_name, folder=self.path))
+
                 print("\titers: {0}, epoch: {1} | norm: {2:.2f} | loss: {3:.7f} | current_loss: {4} |current task: {5}".format(
                         i + 1, epoch + 1, norm_value, loss_sum_display/(i+1), loss_display, task_name, folder=self.path))
                 
@@ -440,6 +462,7 @@ class Exp_All_Task(object):
             epoch + 1, time.time() - epoch_time), folder=self.path)
         train_loss = np.average(train_loss_set)
         torch.cuda.synchronize()
+        # dist.barrier()
 
         return train_loss
 
@@ -530,6 +553,8 @@ class Exp_All_Task(object):
 
     def test(self, setting, load_pretrain=False, test_data_list=None, test_loader_list=None):
         self.path = os.path.join(self.args.checkpoints, setting)
+        # if not os.path.exists(self.path) and is_main_process():
+        #     os.makedirs(self.path)
         if not os.path.exists(self.path):
             os.makedirs(self.path)
         
@@ -575,23 +600,34 @@ class Exp_All_Task(object):
                         setting, test_data, test_loader, data_task_name, task_id)
                 data_task_name = self.task_data_config_list[task_id][0]
                 total_dict[data_task_name] = {'mse': mse, 'mae': mae}
+                # if is_main_process():
+                #     wandb.log({'eval_LF-mse_'+data_task_name: mse})
+                #     wandb.log({'eval_LF-mae_'+data_task_name: mae})
                 avg_long_term_forecast_mse.append(mse)
                 avg_long_term_forecast_mae.append(mae)
             elif task_name == 'classification':
                 acc = self.test_classification(
                     setting, test_data, test_loader, data_task_name, task_id)
                 total_dict[data_task_name] = {'acc': acc}
+                # if is_main_process():
+                #     wandb.log({'eval_CLS-acc_'+data_task_name: acc})
                 avg_classification_acc.append(acc)
             elif task_name == 'imputation':
                 mse, mae = self.test_imputation(
                     setting, test_data, test_loader, data_task_name, task_id)
                 total_dict[data_task_name] = {'mse': mse, 'mae': mae}
+                # if is_main_process():
+                #     wandb.log({'eval_Imputation-mse_'+data_task_name: mse})
+                #     wandb.log({'eval_Imputation-mae_'+data_task_name: mae})
                 avg_imputation_mse.append(mse)
                 avg_imputation_mae.append(mae)
             elif task_name == 'anomaly_detection':
                 f_score = self.test_anomaly_detection(
                     setting, test_data, test_loader, data_task_name, task_id)
                 total_dict[data_task_name] = {'f_score': f_score}
+                # if is_main_process():
+                #     wandb.log({'eval_Anomaly-f_score_' +
+                #               data_task_name: f_score})
                 avg_anomaly_f_score.append(f_score)
 
         avg_long_term_forecast_mse = np.average(avg_long_term_forecast_mse)
@@ -604,6 +640,14 @@ class Exp_All_Task(object):
 
         avg_anomaly_f_score = np.average(avg_anomaly_f_score)
 
+        # if is_main_process():
+        #     wandb.log({'avg_eval_LF-mse': avg_long_term_forecast_mse, 'avg_eval_LF-mae': avg_long_term_forecast_mae,
+        #                'avg_eval_CLS-acc': avg_classification_acc,
+        #                'avg_eval_IMP-mse': avg_imputation_mse, 'avg_eval_IMP-mae': avg_imputation_mae,
+        #                'avg_eval_Anomaly-f_score': avg_anomaly_f_score})
+        #     print("Avg score: LF-mse: {}, LF-mae: {}, CLS-acc {}, IMP-mse: {}, IMP-mae: {}, Ano-F: {}".format(avg_long_term_forecast_mse,
+        #                                                                                                       avg_long_term_forecast_mae, avg_classification_acc, avg_imputation_mse, avg_imputation_mae, avg_anomaly_f_score), folder=self.path)
+        #     print(total_dict, folder=self.path)
         print("Avg score: LF-mse: {}, LF-mae: {}, CLS-acc {}, IMP-mse: {}, IMP-mae: {}, Ano-F: {}".format(avg_long_term_forecast_mse,
                                                                                                             avg_long_term_forecast_mae, avg_classification_acc, avg_imputation_mse, avg_imputation_mae, avg_anomaly_f_score), folder=self.path)
         print(total_dict, folder=self.path)
@@ -750,8 +794,7 @@ class Exp_All_Task(object):
     def test_anomaly_detection(self, setting, test_data, test_loader_set, data_task_name, task_id):
         train_loader, test_loader = test_loader_set
         attens_energy = []
-        anomaly_criterion = nn.MSELoss(reduce=False) # 损失函数
-        # attens_energy 异常能量分数
+        anomaly_criterion = nn.MSELoss(reduce=False)
 
         self.model.eval()
         # (1) stastic on the train set
@@ -761,11 +804,9 @@ class Exp_All_Task(object):
                 # reconstruction
                 outputs = self.model(
                     batch_x, None, None, None, task_id=task_id, task_name='anomaly_detection')
-                
                 # criterion
                 score = torch.mean(anomaly_criterion(batch_x, outputs), dim=-1)
-                
-                score = score.detach().cpu() # 阻断反向传播 移至cpu
+                score = score.detach().cpu()
                 attens_energy.append(score)
 
         attens_energy = gather_tensors_from_all_gpus(
@@ -789,12 +830,9 @@ class Exp_All_Task(object):
         attens_energy = gather_tensors_from_all_gpus(
             attens_energy, self.device_id, to_numpy=True)
         test_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
-
-        # 结合训练集和测试机的所有能量分数
         combined_energy = np.concatenate([train_energy, test_energy], axis=0)
         threshold = np.percentile(
-            combined_energy, 100 - self.args.anomaly_ratio) #按照异常比例的百分位数，确定异常能量的阈值
-        # 这里默认是取所有能量分数列表中第99分位的数值作为阈值(从小到大排列)
+            combined_energy, 100 - self.args.anomaly_ratio)
         print("Threshold :", threshold)
 
         # (3) evaluation on the test set
@@ -805,11 +843,6 @@ class Exp_All_Task(object):
 
         print("pred:   ", pred.shape)
         print("gt:     ", gt.shape)
-
-        import pandas as pd
-        df = pd.DataFrame(list(zip(gt, pred)), columns=['ground truth', 'predict value'])
-        df.to_csv('output.csv', index=False)
-        
 
         # (4) detection adjustment
         gt, pred = adjustment(gt, pred)
