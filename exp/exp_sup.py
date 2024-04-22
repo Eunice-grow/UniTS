@@ -376,8 +376,6 @@ class Exp_All_Task(object):
 
             task_name = self.task_data_config_list[task_id][1]['task_name']
             small_batch_size = self.task_data_config_list[task_id][1]['max_batch']
-            if small_batch_size == 0:
-                continue
             if small_batch_size != self.args.batch_size:
                 sample_list = self.split_batch(
                     sample_init, small_batch_size, task_name)
