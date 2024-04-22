@@ -17,9 +17,11 @@ def combine_all_evaluation_scores(y_test, pred_labels, anomaly_scores):
     Trange = (0, len(y_test))
     affiliation = pr_from_events(events_pred, events_gt, Trange)
     true_events = get_events(y_test)
+
     _, _, _, f1_score_ori, f05_score_ori = get_accuracy_precision_recall_fscore(y_test, pred_labels)
     f1_score_pa = get_point_adjust_scores(y_test, pred_labels, true_events)[5]
 
+    
     pa_accuracy, pa_precision, pa_recall, pa_f_score = get_adjust_F1PA(y_test, pred_labels)
     
     range_f_score = customizable_f1_score(y_test, pred_labels)
