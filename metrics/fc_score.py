@@ -30,6 +30,7 @@ def get_events(y_test, outlier=1, normal=0):
 
 
 def get_composite_fscore_raw(y_test, pred_labels,  true_events, return_prec_rec=False):
+    #  在真实异常事件发生时段内,至少预测出一个异常，这样的个数，注意这里一个时间段记为1次
     tp = np.sum([pred_labels[start:end + 1].any() for start, end in true_events.values()])
     fn = len(true_events) - tp
     rec_e = tp / (tp + fn)

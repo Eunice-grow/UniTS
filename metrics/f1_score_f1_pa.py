@@ -11,7 +11,7 @@ def get_point_adjust_scores(y_test, pred_labels, true_events, thereshold_k=0, wh
         true_start, true_end = true_events[true_event]
         '''如果 whether_top_k 为 False，
         仅检查预测标签序列在真实事件范围内的元素是否有任何一个大于0，如果有，则累加该区间内元素个数到 tp，否则累加到 fn
-        异常时间段只要有1个预测为异常，那么这段异常时间都认为预测出来了异常
+        异常时间段只要有1个预测为异常，那么这段异常时间都认为预测出来了异常，一个时间段内的所有点都判定预测正确了
         '''
         if whether_top_k is False:
             if pred_labels[true_start:true_end].sum() > 0:
@@ -31,22 +31,24 @@ def get_point_adjust_scores(y_test, pred_labels, true_events, thereshold_k=0, wh
 def get_adjust_F1PA(pred, gt):
     anomaly_state = False
     for i in range(len(gt)):
+        # 如果真实值和预测值都异常 且不是异常状态
         if gt[i] == 1 and pred[i] == 1 and not anomaly_state:
             anomaly_state = True
-            for j in range(i, 0, -1):
+            for j in range(i, 0, -1): # 从i位置向左遍历直到0
+                if gt[j] == 0: 
+                    break
+                else:
+                    if pred[j] == 0: # 向左遍历时如果发现真实值为异常，预测值正常那么把预测值调整为异常
+                        pred[j] = 1
+            for j in range(i, len(gt)): # 向右遍历真实值，同样地调整预测值
                 if gt[j] == 0:
                     break
                 else:
                     if pred[j] == 0:
                         pred[j] = 1
-            for j in range(i, len(gt)):
-                if gt[j] == 0:
-                    break
-                else:
-                    if pred[j] == 0:
-                        pred[j] = 1
-        elif gt[i] == 0:
+        elif gt[i] == 0: 
             anomaly_state = False
+        # 循环结束如果仍为异常状态 设置预测值异常
         if anomaly_state:
             pred[i] = 1
             

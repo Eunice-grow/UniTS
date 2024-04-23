@@ -133,14 +133,16 @@ def Range_AUC(score_t_test, y_test,  window=5, percentage=0, plot_ROC=False, AUC
 
 def point_wise_AUC(score_t_test, y_test,  plot_ROC=False):
     # area under curve
-    label = y_test
-    score = score_t_test
+    label = y_test # 真实值
+    score = score_t_test # 预测值
     auc = metrics.roc_auc_score(label, score)
     # plor ROC curve
     if plot_ROC:
         fpr, tpr, thresholds = metrics.roc_curve(label, score)
+        # import matplotlib.pyplot as plt
         # display = metrics.RocCurveDisplay(fpr=fpr, tpr=tpr, roc_auc=auc)
         # display.plot()
+        # plt.show()
         return auc, fpr, tpr
     else:
         return auc

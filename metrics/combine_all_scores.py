@@ -20,24 +20,33 @@ def combine_all_evaluation_scores(y_test, pred_labels, anomaly_scores):
     _, _, _, f1_score_ori, f05_score_ori = get_accuracy_precision_recall_fscore(
         y_test, pred_labels
     )
-    f1_score_pa = get_point_adjust_scores(y_test, pred_labels, true_events)[5]
+    print("f1_score_ori=", f1_score_ori, "\nf05_score_ori=", f05_score_ori)
 
-    print("f1_score_ori", f1_score_ori)
+    f1_score_pa = get_point_adjust_scores(y_test, pred_labels, true_events)[5]
+    print("f1_score_pa=", f1_score_pa)
+
     pa_accuracy, pa_precision, pa_recall, pa_f_score = get_adjust_F1PA(
         y_test, pred_labels
     )
-    print("pa_f_score", pa_f_score)
-    range_f_score = customizable_f1_score(y_test, pred_labels)
+    print("pa_f_score=", pa_f_score)
+
+    # range_f_score = customizable_f1_score(y_test, pred_labels)  # 定制化的F1-score
+
     _, _, f1_score_c = get_composite_fscore_raw(
         y_test, pred_labels, true_events, return_prec_rec=True
     )
+    print("f1_score_c=", f1_score_c)
 
     # precision_k = precision_at_k(y_test, anomaly_scores, pred_labels)
 
-    point_auc = point_wise_AUC(pred_labels, y_test)
+    point_auc = point_wise_AUC(pred_labels, y_test, plot_ROC=True)
+    print("point_auc=", point_auc)
+
     range_auc = Range_AUC(pred_labels, y_test)
-    MCC_score = MCC(y_test, pred_labels)
-    results = get_range_vus_roc(y_test, pred_labels, 100)  # slidingWindow = 100 default
+    print("range_auc=", range_auc)
+
+    # MCC_score = MCC(y_test, pred_labels)
+    # results = get_range_vus_roc(y_test, pred_labels, 100)  # slidingWindow = 100 default
 
     score_list = {
         "f1_score_ori": f1_score_ori,
@@ -47,18 +56,18 @@ def combine_all_evaluation_scores(y_test, pred_labels, anomaly_scores):
         "pa_precision": pa_precision,
         "pa_recall": pa_recall,
         "pa_f_score": pa_f_score,
-        "range_f_score": range_f_score,
-        "f1_score_c": f1_score_c,
+        # "range_f_score": range_f_score,
+        "f1_score_c": f1_score_c,  ### 这是rpa
         #   "precision_k": precision_k,
         "point_auc": point_auc,
         "range_auc": range_auc,
-        "MCC_score": MCC_score,
+        # "MCC_score": MCC_score,
         "Affiliation precision": affiliation["precision"],
         "Affiliation recall": affiliation["recall"],
-        "R_AUC_ROC": results["R_AUC_ROC"],
-        "R_AUC_PR": results["R_AUC_PR"],
-        "VUS_ROC": results["VUS_ROC"],
-        "VUS_PR": results["VUS_PR"],
+        # "R_AUC_ROC": results["R_AUC_ROC"],
+        # "R_AUC_PR": results["R_AUC_PR"],
+        # "VUS_ROC": results["VUS_ROC"],
+        # "VUS_PR": results["VUS_PR"],
     }
 
     return score_list
@@ -81,8 +90,8 @@ def main():
 
     import pandas as pd
 
-    df = pd.read_csv("output.csv")
-    y_test, pred_labels = df["ground truth"], df["predict value"]
+    # df = pd.read_csv("output.csv")
+    # y_test, pred_labels = df["ground truth"], df["predict value"]
 
     true_events = get_events(y_test)
     # print('y_test:  ',y_test)

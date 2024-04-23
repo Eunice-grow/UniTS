@@ -1,19 +1,18 @@
 task_dataset:
-  # WADI:
-  #   task_name: anomaly_detection
-  #   dataset_name: WADI
-  #   dataset: WADI
-  #   data: custom
-  #   root_path: ../dataset/wadi
-  #   data_path: dataset/wadi/WADI_test.csv
-  #   seq_len: 96
-  #   label_len: 0
-  #   pred_len: 0
-  #   features: M
-  #   embed: timeF
-  #   enc_in: 127
-  #   dec_in: 127
-  #   c_out: 127
+  WADI:
+    task_name: anomaly_detection
+    dataset_name: WADI
+    dataset: WADI
+    data: custom
+    root_path: ../dataset/WADI
+    seq_len: 96
+    label_len: 0
+    pred_len: 0
+    features: M
+    embed: timeF
+    enc_in: 127
+    dec_in: 127
+    c_out: 127
 
   SWAT:
     task_name: anomaly_detection
