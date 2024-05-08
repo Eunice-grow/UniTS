@@ -275,22 +275,23 @@ class VarAttention(nn.Module):
         self.proj_drop = nn.Dropout(proj_drop)
 
     def forward(self, x):
-        B, N, P, C = x.shape
+        B, N, P, C = x.shape # (B, N, P, C)，其中B是批次大小，N是序列长度，P是额外维度，C是特征维度??
 
         qkv = self.qkv(x).reshape(B, N, P, 3, self.num_heads,
-                                  self.head_dim).permute(3, 0, 2, 4, 1, 5)
+                                  self.head_dim).permute(3, 0, 2, 4, 1, 5) #对输入进行变换，然后将其重新排列和重塑为适于多头注意力机制的形式
         q, k, v = qkv.unbind(0)
         q, k = self.q_norm(q), self.k_norm(k)
 
-        q = q.mean(dim=1, keepdim=False)
+        q = q.mean(dim=1, keepdim=False) # 对query和key在??维度上取平均，降低维度
         k = k.mean(dim=1, keepdim=False)
-        v = v.permute(0, 2, 3, 4, 1).reshape(B, self.num_heads, N, -1)
+        v = v.permute(0, 2, 3, 4, 1).reshape(B, self.num_heads, N, -1) #对value张量进行适当的排列和重塑
 
         x = F.scaled_dot_product_attention(
             q, k, v,
             dropout_p=self.attn_drop.p if self.training else 0.,
         )
 
+        # 转换回原始的(B, N, P, C)
         x = x.view(B, self.num_heads, N, -1, P).permute(0,
                                                         2, 4, 1, 3).reshape(B, N, P, -1)
         x = self.proj(x)
@@ -384,9 +385,9 @@ class VarAttBlock(nn.Module):
         self.proj = nn.Linear(dim, dim)
 
     def forward(self, x):
-        # 归一化、注意力机制、门控模块、
         x = x + self.drop_path1(self.ls1(self.attn_var(self.norm1(x))))
         return x
+        # 归一化、注意力机制、门控模块、
 
 
 class MLPBlock(nn.Module):
@@ -411,7 +412,7 @@ class MLPBlock(nn.Module):
                 hidden_features=int(dim * mlp_ratio),
                 act_layer=act_layer,
                 drop=proj_drop,
-                prefix_token_length=prefix_token_length,
+                prefix_token_length=prefix_token_length, # 多传递的内容
             )
         else:
             self.mlp = mlp_layer(
@@ -474,6 +475,7 @@ class BasicBlock(nn.Module):
 
 
 class PatchEmbedding(nn.Module):
+    # model维度,patch长度,步长,dropout
     def __init__(self, d_model, patch_len, stride, padding, dropout):
         super(PatchEmbedding, self).__init__()
         # Patching
@@ -691,7 +693,8 @@ class Model(nn.Module):
     def prepare_prompt(self, x, n_vars, prefix_prompt, task_prompt, task_prompt_num, task_name=None, mask=None):
         x = torch.reshape(
             x, (-1, n_vars, x.shape[-2], x.shape[-1]))
-        # 四维张量,变量放在第2维
+        # SWAT:(32,51,6,32) 6个patch,32batchsize
+        # 四维张量,变量个数放在第2维
         # append prompt tokens
         this_prompt = prefix_prompt.repeat(x.shape[0], 1, 1, 1)
 
@@ -794,6 +797,7 @@ class Model(nn.Module):
 
         x = self.backbone(x, prefix_prompt.shape[2], seq_len)
 
+
         x = self.cls_head(x, category_token)
 
         return x
@@ -825,18 +829,30 @@ class Model(nn.Module):
         # 异常检测向前传播
         dataset_name = self.configs_list[task_id][1]['dataset']
         prefix_prompt = self.prompt_tokens[dataset_name]
+        # prefix_prompt.shape [1,51,10,32] 
+        # x.shape [32,96,51]
 
         seq_len = x.shape[1]
-        # token化
-        x, means, stdev, n_vars, padding = self.tokenize(x)
+        
+        # token化,x,
+        x, means, stdev, n_vars, padding = self.tokenize(x) # token化之后x从32,96,51变成1632,6,32
+        
         # 提示信息,这一步包含了位置信息,和prefix_prompt?
         x = self.prepare_prompt(x, n_vars, prefix_prompt,
-                                None, None, task_name='anomaly_detection')
-        seq_token_len = x.shape[-2]-prefix_prompt.shape[2]
-        x = self.backbone(x, prefix_prompt.shape[2], seq_token_len)
-
+                                None, None, task_name='anomaly_detection') 
+        # x[32,51,16,32] 第一个32表示batch_size
+        
+        seq_token_len = x.shape[-2]-prefix_prompt.shape[2]  # seq_token_len=6
+        
+        x = self.backbone(x, prefix_prompt.shape[2], seq_token_len) 
+        # x[32,51,16,32]
+        
+        # print("###attention####")
+        # print(x.size()) # [32, 51, 16, 32] batch_size\multi_val_nums
+        
+        # 预测的head??
         x = self.forecast_head(
-            x, seq_len+padding, seq_token_len)
+            x, seq_len+padding, seq_token_len) # [32,96,51]  batch_size\sequence_len\multi_val_nums
         x = x[:, :seq_len]
 
         # De-Normalization from Non-stationary Transformer

@@ -93,6 +93,13 @@ def main():
     # df = pd.read_csv("output.csv")
     # y_test, pred_labels = df["ground truth"], df["predict value"]
 
+    df = pd.read_csv("output_change.csv")
+    y_test, pred_labels, anomaly_scores = (
+        df["ground truth"],
+        df["predict label"],
+        df["predict score"],
+    )
+
     true_events = get_events(y_test)
     # print('y_test:  ',y_test)
     # print('pred_labels: ',pred_labels)

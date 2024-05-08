@@ -205,6 +205,8 @@ class Exp_All_Task(object):
                 data_set_list.append(data_set)
                 data_loader_list.append(data_loader)
                 print(task_data_name, len(data_set))
+        
+        print('len(data_set_list) = ',len(data_set_list))
         return data_set_list, data_loader_list
 
     def _select_optimizer(self):
@@ -780,6 +782,21 @@ class Exp_All_Task(object):
                                  task_id=task_id, task_name='anomaly_detection')
             # criterion
             score = torch.mean(anomaly_criterion(batch_x, outputs), dim=-1)
+
+            # with open("outputs.txt", "w") as file:
+            #     for i in range(32):
+            #         for j in range(96):
+            #             for k in range(51):
+            #                 file.write(str(outputs[i][j][k].item()))
+            #                 file.write('\n')
+
+            # with open("batch_x.txt", "w") as file:
+            #     for i in range(32):
+            #         for j in range(96):
+            #             for k in range(51):
+            #                 file.write(str(batch_x[i][j][k].item()))
+            #                 file.write('\n')
+
             score = score.detach().cpu()
             attens_energy.append(score)
             test_labels.append(batch_y)
@@ -804,9 +821,9 @@ class Exp_All_Task(object):
         print("pred:   ", pred.shape)
         print("gt:     ", gt.shape)
 
-        import pandas as pd
-        df = pd.DataFrame(list(zip(gt, pred)), columns=['ground truth', 'predict value'])
-        df.to_csv('output.csv', index=False)
+        # import pandas as pd
+        # df = pd.DataFrame(list(zip(gt, pred)), columns=['ground truth', 'predict value'])
+        # df.to_csv('output.csv', index=False)
         
 
         # (4) detection adjustment
@@ -894,6 +911,7 @@ class Exp_All_Task(object):
             split_batch_y_mark = split_tensor(batch_y_mark, small_batch_size)
             return list(zip(split_batch_x, split_batch_y, split_batch_x_mark, split_batch_y_mark))
         elif task_name == 'anomaly_detection':
+            print("#####debug:",batch)
             batch_x, batch_y = batch
             split_batch_x = split_tensor(batch_x, small_batch_size)
             split_batch_y = split_tensor(batch_y, small_batch_size)
@@ -901,6 +919,7 @@ class Exp_All_Task(object):
 
     def memory_check(self, data_loader_cycle, criterion_list, holdout_memory=3):
         """
+        # 通过逐渐增加批处理大小来检查模型的内存使用情况，直到达到可以支持的最大批处理大小而不会耗尽内存。
         Checks the memory usage of the model by gradually increasing the batch size until it reaches the maximum batch size that can be supported without running out of memory.
 
         Args:

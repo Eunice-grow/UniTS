@@ -25,7 +25,7 @@ def adjust_learning_rate(optimizer, epoch, base_lr, args):
                          (0.5 ** (((epoch-args.prompt_tune_epoch)) // 1))}
     elif args.lradj == 'finetune_anl':
         k = 1
-        lr_adjust = {epoch: base_lr / (2 ** ((epoch) // k))}
+        lr_adjust = {epoch: base_lr / (2 ** ((epoch) // k))}  #指数衰减的方式降低学习率
 
     if epoch in lr_adjust.keys():
         lr = lr_adjust[epoch]
