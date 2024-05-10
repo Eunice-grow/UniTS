@@ -839,7 +839,16 @@ class Exp_All_Task(object):
         print("Accuracy : {:0.4f}, Precision : {:0.4f}, Recall : {:0.4f}, F-score : {:0.4f} ".format(
             accuracy, precision,
             recall, f_score))
-
+        
+        import csv
+        import datetime
+        with open('ad_metrics.csv','a',newline='') as f:
+            # 'Date', 'Dataset' , 'Accuracy' ,'Precision', 'Recall' ,'F-score'
+            writer = csv.writer(f)
+            writer.writerow([datetime.datetime.now().strftime("%Y-%m-%d"),
+                             self.task_data_config_list[task_id][0],
+                             accuracy,precision,recall,f_score])
+        
         return f_score
 
     def test_long_term_forecast_offset_unify(self, setting, test_data, test_loader, data_task_name, task_id):

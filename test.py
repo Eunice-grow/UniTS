@@ -1,4 +1,5 @@
 from metrics.combine_all_scores import main
+from metrics.combine_all_scores import combine_all_evaluation_scores
 
 def test():
     import pandas as pd
@@ -47,7 +48,42 @@ def print_ucr_yaml():
     print(fname_list)
     print(len(fname_list))
 
+def test_ocsvm():
+    import pandas as pd
+    import time
+    import numpy as np
+    from sklearn.svm import OneClassSVM
+    from sklearn.preprocessing import StandardScaler
+    origin_train = pd.read_csv('./dataset/SWaT/SWaT_train.csv',index_col=[0])
+    origin_test = pd.read_csv('./dataset/SWaT/SWaT_test.csv',index_col=[0])
+    train_data = origin_train.values[:, :-1]
+    train_labels = origin_train['label']
+    test_data = origin_test.values[:,:-1]
+    test_labels = origin_test['label']
+    print('train_data',train_data.shape)
+    print('test_data',test_data.shape)
+
+
+    scaler = StandardScaler()
+    np_scaled = scaler.fit_transform(train_data)
+    data = pd.DataFrame(np_scaled)
+    # train oneclassSVM 
+    model = OneClassSVM(nu=0.01, kernel="rbf", gamma=0.01)
+    print("---------------------start training-------------------")
+    start_time = time.time()
+    model.fit(data)
+    print('the training costs {}s'.format(time.time() - start_time))
+    print("---------------------end training-------------------")
+
+    predict = model.predict(test_data)
+    predict_test_labels = np.where(predict == 1, 0, 1) # 正常 0 异常1
+    
+    combine_all_evaluation_scores(test_labels , predict_test_labels, 0)
+
+
+
 if __name__ == '__main__':
     # main()
     # test()
-    print_ucr_yaml()
+    # print_ucr_yaml()
+    test_ocsvm()

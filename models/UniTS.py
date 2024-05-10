@@ -523,8 +523,15 @@ class CLSHead(nn.Module):
 
         distance = distance.mean(dim=1)
         return distance
+    
+class DeepSVDD(nn.Module):
+    def __init__(self, d_model, patch_len, stride, pad, head_dropout=0, prefix_token_length=None):
+        super().__init__()
 
-
+    def forward(self, x):
+        
+        return x
+    
 class ForecastHead(nn.Module):
     def __init__(self, d_model, patch_len, stride, pad, head_dropout=0, prefix_token_length=None):
         super().__init__()
@@ -847,9 +854,10 @@ class Model(nn.Module):
         x = self.backbone(x, prefix_prompt.shape[2], seq_token_len) 
         # x[32,51,16,32]
         
-        # print("###attention####")
+        print("###attention####")
         # print(x.size()) # [32, 51, 16, 32] batch_size\multi_val_nums
-        
+
+
         # 预测的head??
         x = self.forecast_head(
             x, seq_len+padding, seq_token_len) # [32,96,51]  batch_size\sequence_len\multi_val_nums
